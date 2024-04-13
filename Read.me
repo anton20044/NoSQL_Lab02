@@ -1,0 +1,49 @@
+Лабораторная работа №2 по курсу NoSQL.
+
+Задание:
+	- установить MongoDB одним из способов: ВМ, докер;
+	- заполнить данными;
+	- написать несколько запросов на выборку и обновление данных;
+	- создать индексы и сравнить производительность
+
+Решение:
+
+1) 
+	- Создана ВМ с ОС Ubuntu 22
+	- Установлена СУБД MongoDB согласно инструкции с официального сайта
+	
+2)
+	- Загружены данные тестового датасета https://github.com/ozlerhakan/mongodb-json-files/blob/master/datasets/books.json (в базу lab02 коллекцию test)
+
+3)
+	- Выполнены следующие запросы на выборку данных:
+		- db.test.find({pageCount: 512})  - поиск книг по количеству страниц
+		- db.test.count() общее количество документов в коллекции
+	- Выполнены следующие запросы на обновление данных:
+		- db.test.update({status: "MEAP", title: "Android in Practice"}, {$set: {status: "PUBLISH"}}) - изменили статус книги на опубликована
+4)
+	- Выполнен запрос db.test.find({status: "PUBLISH"}) на поиск опубликованных книг
+	- Затем выполнен просмотр плана db.test.find({status: "PUBLISH"}).explain("executionStats")
+	executionStages: {
+      stage: 'COLLSCAN',
+      filter: { status: { '$eq': 'PUBLISH' } },
+      nReturned: 365,
+      executionTimeMillisEstimate: 0,
+      works: 432,
+      advanced: 365,
+
+	- Из плана запроса видно что просмотрено 432 документа, но возвращено только 365. Так же выбран метод "COLLSCAN", т.е. просмотр всех документов в коллекции
+	- По аттрибуту status построен индекс: db.test.ensureIndex({status: 1})
+	- Повторен запрос db.test.find({status: "PUBLISH"}).explain("executionStats")
+	- Из плана видно что было просмотрено и возвращено 365 документов, метод выбран "INDEXSCAN"
+	 inputStage: {
+        stage: 'IXSCAN',
+        nReturned: 365,
+        executionTimeMillisEstimate: 0,
+        works: 366,
+        advanced: 365,
+
+	
+После построения индекса по полю status поиск в коллекции стал выполняться эффективнее
+
+
